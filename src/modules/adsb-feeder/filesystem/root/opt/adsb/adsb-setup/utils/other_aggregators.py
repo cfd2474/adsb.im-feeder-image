@@ -481,7 +481,17 @@ class OpenSky(Aggregator):
             flash("OpenSky: couldn't find a serial number in server response")
             return None
 
-        return serial_match.group(1)
+        serial = serial_match.group(1)
+        # new opensky serial numbers all start with a dash and are purely decimal numbers
+        # apparently somehow (i'd guess their server but who knows) users are getting base64 serial
+        # numbers which don't work
+        # enforce format to avoid issues
+        if not re.match("-[0-9]*", serial):
+            print_err(f"serial number in container output is invalid: {output}")
+            flash("OpenSky: got an invalid serial number, please try again or report this error")
+            return None
+
+        return serial
 
     def _activate(self, user_input: str, idx: int = 0) -> bool:
         self._idx = make_int(idx)
