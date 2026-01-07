@@ -1076,28 +1076,53 @@ class AdsbIm:
 
     def restore(self):
         if request.method == "POST":
-            # check if the post request has the file part
-            if "file" not in request.files:
-                flash("No file submitted")
+            # read the post request as a stream
+            # request.files uses /tmp which can be too small
+            # thus we need to parse the POST request ourselves which is a bit of a pain
+            # read the first chunk and separate the POST header from the body
+            # we parse the header and store the first part of the body as chunk
+            chunk_size = 16 * 1024
+            chunk = request.stream.read(chunk_size)
+            split = chunk.split(b"\r\n\r\n", 1)
+            if len(split) != 2:
+                flash("POST header issue")
+                print_err("Restore: POST header issue")
                 return redirect(request.url)
-            file = request.files["file"]
+            header_bytes, chunk = split
+            header = str(header_bytes)
+            match = re.search('filename="([^"]*)"', header)
+            if not match:
+                flash("No file submitted")
+                print_err("Restore: No file submitted, header was: " + header)
+                return redirect(request.url)
+            filename = secure_filename(match.group(1))
             # If the user does not select a file, the browser submits an
             # empty file without a filename.
-            if file.filename == "":
+            if filename == "":
                 flash("No file selected")
+                print_err("Restore: No file selected, header was: " + header)
                 return redirect(request.url)
-            if file.filename and (file.filename.endswith(".zip") or file.filename.endswith(".backup")):
-                filename = secure_filename(file.filename)
-                restore_path = pathlib.Path(f"{get_adsb_base_dir()}/config/restore")
-                # clean up the restore path when saving a fresh zipfile
-                shutil.rmtree(restore_path, ignore_errors=True)
-                restore_path.mkdir(mode=0o644, exist_ok=True)
-                file.save(restore_path / filename)
-                print_err(f"saved restore file to {restore_path / filename}")
-                return redirect(url_for("executerestore", zipfile=filename))
-            else:
+            if not (filename.endswith(".zip") or filename.endswith(".backup")):
                 flash("Please only submit ADS-B Feeder Image backup files")
+                print_err("Restore: Incorrect filename, header was: " + header)
                 return redirect(request.url)
+
+            restore_path = pathlib.Path(f"{get_adsb_base_dir()}/config/restore")
+            # clean up the restore path when saving a fresh zipfile
+            shutil.rmtree(restore_path, ignore_errors=True)
+            restore_path.mkdir(mode=0o644, exist_ok=True)
+
+            with open(restore_path / filename, "bw") as f:
+                # this while loop looks backwards but it's not because we start with the first chunk
+                # we read further up in this function
+                while True:
+                    if len(chunk) == 0:
+                        break
+                    f.write(chunk)
+                    chunk = request.stream.read(chunk_size)
+
+            print_err(f"saved restore file to {restore_path / filename}")
+            return redirect(url_for("executerestore", zipfile=filename))
         else:
             return render_template("/restore.html")
 
