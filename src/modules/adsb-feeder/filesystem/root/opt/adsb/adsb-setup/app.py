@@ -1081,7 +1081,8 @@ class AdsbIm:
             # thus we need to parse the POST request ourselves which is a bit of a pain
             # read the first chunk and separate the POST header from the body
             # we parse the header and store the first part of the body as chunk
-            chunk_size = 16 * 1024
+            print_err("Restore: processing POST")
+            chunk_size = 128 * 1024
             chunk = request.stream.read(chunk_size)
             split = chunk.split(b"\r\n\r\n", 1)
             if len(split) != 2:
@@ -1112,16 +1113,25 @@ class AdsbIm:
             shutil.rmtree(restore_path, ignore_errors=True)
             restore_path.mkdir(mode=0o644, exist_ok=True)
 
+            received_bytes = 0
+            next_progress = time.time() + 5
+
             with open(restore_path / filename, "bw") as f:
                 # this while loop looks backwards but it's not because we start with the first chunk
                 # we read further up in this function
                 while True:
                     if len(chunk) == 0:
                         break
+
+                    received_bytes += len(chunk)
+                    if time.time() > next_progress:
+                        next_progress = time.time() + 5
+                        print_err(f"Restore: upload progress: {round(received_bytes / (1024 * 1024))} MB")
+
                     f.write(chunk)
                     chunk = request.stream.read(chunk_size)
 
-            print_err(f"saved restore file to {restore_path / filename}")
+            print_err(f"Restore: saved file to {restore_path / filename}")
             return redirect(url_for("executerestore", zipfile=filename))
         else:
             return render_template("/restore.html")
