@@ -1,5 +1,7 @@
 Changes since v3.0.7
 =======
+- change restore implementation to work on systems with small /tmp filesystem
+- ensure OS update doesn't hang waiting for keyboard input
 - update almost all docker containers to current versions
 - move secure image enable into shell script
 
