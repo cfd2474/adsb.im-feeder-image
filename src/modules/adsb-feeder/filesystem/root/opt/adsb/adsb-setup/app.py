@@ -1119,10 +1119,7 @@ class AdsbIm:
             with open(restore_path / filename, "bw") as f:
                 # this while loop looks backwards but it's not because we start with the first chunk
                 # we read further up in this function
-                while True:
-                    if len(chunk) == 0:
-                        break
-
+                while len(chunk) > 0:
                     received_bytes += len(chunk)
                     if time.time() > next_progress:
                         next_progress = time.time() + 5
