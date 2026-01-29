@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+*.bak
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets (IMPORTANT!)
+*.key
+*.pem
+tskey-*
+.env.local
+secrets/
+
+# Build artifacts
+*.img
+*.img.gz
+*.img.xz
+*.iso
+*.tar.gz
+*.zip
+
+# Temporary files
+tmp/
+temp/
+.cache/
